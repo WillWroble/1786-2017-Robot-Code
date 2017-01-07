@@ -16,6 +16,7 @@ If you are a member of Team 1786 and find an issue with the code that should be 
 
 1. Make a new issue or comment on an existing issue on the repo's github page under the [Issues tab](https://github.com/Team1786/1786-2017-Robot-Code/issues). Try to describe the issue as precisely as possible and indicate any progress you've made on it, if at all. 
 2. Eventually try to fix the problem
+3. If it is more systemic or broad, you should consider adding your issues to the "Projects" tab of this repo. It can be used for future planning and setting the urgency of issues.
 
 If you are on Team 1786 and wish to contribute to this project, do **NOT** the following:  
 * Make a branch named after the author. You should make branches based on features, not people
