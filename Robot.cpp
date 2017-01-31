@@ -8,11 +8,17 @@
 #include <SmartDashboard/SmartDashboard.h>
 
 class Robot: public frc::IterativeRobot {
+	CANTalon *climberController;
+	Joystick *stick;
+	bool buttonPressed = false;
+	//reverseThrottleNum will be used like a boolian to determine whether the throttle will be positive or negetive.
+	int reverseThrottleNum = 1;
 public:
 	void RobotInit() {
 		chooser.AddDefault(autoNameDefault, autoNameDefault);
 		chooser.AddObject(autoNameCustom, autoNameCustom);
 		frc::SmartDashboard::PutData("Auto Modes", &chooser);
+
 	}
 
 	/*
@@ -52,6 +58,26 @@ public:
 
 	void TeleopPeriodic() {
 
+		//throttle value is the refined output from the GetThrottle Method
+		float throttleValue = (stick->GetThrottle() + 1)/2;
+
+			// button must be pressed, but it must be pressed while not already being pressed
+			if (!buttonPressed && stick->GetRawButton(11))
+			{
+				buttonPressed = true;
+				reverseThrottleNum = reverseThrottleNum * -1;
+
+			}
+			// once not pressing the button, button can be pressed again
+			if (!stick->GetRawButton(11))
+			{
+				buttonPressed = false;
+			}
+
+			//applies the throttle value to the CANTalon, and then uses reverseThrottleNum to determin whether
+			//throttleValue will be negitive
+			climberController->Set(throttleValue * reverseThrottleNum);
+		}
 	}
 
 	void TestPeriodic() {
