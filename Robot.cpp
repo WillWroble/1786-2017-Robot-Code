@@ -9,7 +9,14 @@
 
 class Robot: public frc::IterativeRobot {
 public:
+	JoyStick *driveStick;
+	CANTalon *intakeController;
+	int direction = 1;
+	bool notPressedBefore;
 	void RobotInit() {
+
+		driveStick = new Joystick(0);
+		intakeController = new CANTalon(3);
 		chooser.AddDefault(autoNameDefault, autoNameDefault);
 		chooser.AddObject(autoNameCustom, autoNameCustom);
 		frc::SmartDashboard::PutData("Auto Modes", &chooser);
@@ -51,6 +58,21 @@ public:
 	}
 
 	void TeleopPeriodic() {
+
+		if(driveStick->GetButton(12) && notPressedBefore)
+		{
+			notPressedBefore = false;
+			direction = direction * -1;
+		}
+		else
+		{
+			notPressedBefore = true;
+		}
+
+		if(driveStick->GetButton(2))
+		{
+			intakeController->set(direction);
+		}
 
 	}
 
