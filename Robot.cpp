@@ -1,18 +1,52 @@
 #include <iostream>
 #include <memory>
 #include <string>
-
+#include <CANTalon.h>
+#include <WPILib.h>
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
 #include <SmartDashboard/SendableChooser.h>
 #include <SmartDashboard/SmartDashboard.h>
 
 class Robot: public frc::IterativeRobot {
+	CANTalon *climberController, *intakeController, *shooter, *lf, *lb, *rf, *rb;
+	RobotDrive *mecanumDrive;
+	Joystick *stick, *operatorStick;
+	bool button1Pressed = false;
+	bool opButton1Pressed = false;
+	bool opButton2Pressed = false;
+	bool switchThrottle = false;
+	bool alreadySwitched = false;
+	int reverseThrottleNum = 1;
+	int opReverseThrottleNum1 = 1;
+	int opReverseThrottleNum2 = 1;
+	int climberSpeed = 0;
+
 public:
 	void RobotInit() {
 		chooser.AddDefault(autoNameDefault, autoNameDefault);
 		chooser.AddObject(autoNameCustom, autoNameCustom);
 		frc::SmartDashboard::PutData("Auto Modes", &chooser);
+
+		//calling constructers of previously defined classes
+		stick = new Joystick(0);
+		operatorStick = new Joystick(1);
+
+		// same thing for CANTalons
+		lf = new CANTalon(3);
+		lb = new CANTalon(4);
+		rf = new CANTalon(2);
+		rb = new CANTalon(5);
+		intakeController = new CANTalon(0);
+		climberController = new CANTalon(1);
+		shooter = new CANTalon(6);
+
+		// getting the RobotDrive ready
+		mecanumDrive = new RobotDrive(lf, lb, rf, rb);
+		mecanumDrive->SetSafetyEnabled(true);
+		mecanumDrive->SetExpiration(0.1);
+		lf->SetInverted(true);
+		lb->SetInverted(true);
 	}
 
 	/*
@@ -30,6 +64,9 @@ public:
 		autoSelected = chooser.GetSelected();
 		// std::string autoSelected = SmartDashboard::GetString("Auto Selector", autoNameDefault);
 		std::cout << "Auto selected: " << autoSelected << std::endl;
+
+		mecanumDrive->MecanumDrive_Cartesian(0,1,0);
+
 
 		if (autoSelected == autoNameCustom) {
 			// Custom Auto goes here
@@ -52,12 +89,73 @@ public:
 
 	void TeleopPeriodic() {
 
-	}
+		//this converts a range from -1 to 1 to 0 to 1,
+		//oddly enough -1 is max speed and 1 is no speed
 
-	void TestPeriodic() {
-		lw->Run();
-	}
+		float driveThrottle = ((stick->GetThrottle()-1)/-2);
+		float operatorThrottle = ((operatorStick->GetThrottle()-1)/-2);
 
+		//this is the method that takes the x, y and z values we need
+		// and basicly does all the work for us.
+
+		mecanumDrive->MecanumDrive_Cartesian(stick->GetX(), stick->GetY(), stick->GetZ());
+
+		//here is the controller for the intake using the throttle
+
+		if(stick->GetRawButton(11) && !button1Pressed)
+		{
+			reverseThrottleNum = reverseThrottleNum * -1;
+			button1Pressed = true;
+		}
+		if(!stick->GetRawButton(11))
+		{
+			button1Pressed = false;
+		}
+
+		intakeController->Set(driveThrottle * reverseThrottleNum);
+		if(operatorStick->GetRawButton(11) && !opButton1Pressed)
+		{
+			opReverseThrottleNum1 = opReverseThrottleNum1 * -1;
+			opButton1Pressed = true;
+		}
+		if(!operatorStick->GetRawButton(11))
+		{
+			opButton1Pressed = false;
+		}
+
+		shooter->Set(operatorThrottle * opReverseThrottleNum1);
+
+
+		if(operatorStick->GetRawButton(9) && !alreadySwitched)
+		{
+			alreadySwitched = true;
+			if(switchThrottle)
+			{
+				switchThrottle = false;
+			}
+			else
+			{
+				switchThrottle = true;
+			}
+
+		}
+		if(!operatorStick->GetRawButton(9))
+		{
+			alreadySwitched = false;
+		}
+
+		if(operatorStick->GetRawButton(10) && !opButton2Pressed)
+		{
+			opReverseThrottleNum2 = opReverseThrottleNum2 * -1;
+			opButton2Pressed = true;
+		}
+		if(!operatorStick->GetRawButton(10))
+		{
+			opButton2Pressed = false;
+		}
+
+		climberController->Set(climberSpeed * opReverseThrottleNum2);
+	}
 private:
 	frc::LiveWindow* lw = LiveWindow::GetInstance();
 	frc::SendableChooser<std::string> chooser;
