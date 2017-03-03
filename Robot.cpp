@@ -14,13 +14,10 @@ class Robot: public frc::IterativeRobot {
 	Joystick *stick, *operatorStick;
 	bool button1Pressed = false;
 	bool opButton1Pressed = false;
-	bool opButton2Pressed = false;
-	bool switchThrottle = false;
-	bool alreadySwitched = false;
+	bool switchClimberOn = false;
+	bool switchIntakeOn = false;
 	int reverseThrottleNum = 1;
-	int opReverseThrottleNum1 = 1;
-	int opReverseThrottleNum2 = 1;
-	int climberSpeed = 0;
+	int opReverseThrottleNum = 1;
 
 public:
 	void RobotInit() {
@@ -89,19 +86,28 @@ public:
 
 	void TeleopPeriodic() {
 
-		//this converts a range from -1 to 1 to 0 to 1,
-		//oddly enough -1 is max speed and 1 is no speed
 
+
+		// GETS THROTTLE FOR INTAKE
 		float driveThrottle = ((stick->GetThrottle()-1)/-2);
+
+		//GETS THROTTLE FOR CLIMBER
 		float operatorThrottle = ((operatorStick->GetThrottle()-1)/-2);
 
-		//this is the method that takes the x, y and z values we need
-		// and basicly does all the work for us.
-
+		//DRIVE TRAIN
 		mecanumDrive->MecanumDrive_Cartesian(stick->GetX(), stick->GetY(), stick->GetZ());
 
-		//here is the controller for the intake using the throttle
+		//GET INTAKE AUTOMATIC BUTTON
+		if(stick->GetRawButton(7))
+		{
+			switchIntakeOn = true;
+		}
+		else
+		{
+			switchIntakeOn = false;
+		}
 
+		//CONTROLS THROTTLE REVERSAL FOR INTAKE
 		if(stick->GetRawButton(11) && !button1Pressed)
 		{
 			reverseThrottleNum = reverseThrottleNum * -1;
@@ -112,10 +118,29 @@ public:
 			button1Pressed = false;
 		}
 
+		//AUTOMATIC CONTROL FOR INTAKE
+		if(switchIntakeOn && driveThrottle == 0)
+		{
+			driveThrottle = 0.5;
+		}
+
+		//PUTS CORRECT VALUE IN FOR INTAKE
 		intakeController->Set(driveThrottle * reverseThrottleNum);
+
+		//GET CLIMBER AUTOMATIC BUTTON
+		if(operatorStick->GetRawButton(7))
+		{
+			switchClimberOn = true;
+		}
+		else
+		{
+			switchClimberOn = false;
+		}
+
+		//CONTOLS THROTTLE REVERSAL FOR CLIMBER
 		if(operatorStick->GetRawButton(11) && !opButton1Pressed)
 		{
-			opReverseThrottleNum1 = opReverseThrottleNum1 * -1;
+			opReverseThrottleNum = opReverseThrottleNum * -1;
 			opButton1Pressed = true;
 		}
 		if(!operatorStick->GetRawButton(11))
@@ -123,38 +148,22 @@ public:
 			opButton1Pressed = false;
 		}
 
-		shooter->Set(operatorThrottle * opReverseThrottleNum1);
-
-
-		if(operatorStick->GetRawButton(9) && !alreadySwitched)
+		//AUTOMATIC CONTROL FOR CLIMBER
+		if(switchClimberOn && operatorThrottle == 0)
 		{
-			alreadySwitched = true;
-			if(switchThrottle)
-			{
-				switchThrottle = false;
-			}
-			else
-			{
-				switchThrottle = true;
-			}
-
-		}
-		if(!operatorStick->GetRawButton(9))
-		{
-			alreadySwitched = false;
+			operatorThrottle = 0.5;
 		}
 
-		if(operatorStick->GetRawButton(10) && !opButton2Pressed)
-		{
-			opReverseThrottleNum2 = opReverseThrottleNum2 * -1;
-			opButton2Pressed = true;
-		}
-		if(!operatorStick->GetRawButton(10))
-		{
-			opButton2Pressed = false;
-		}
+		//PUTS CORRECT VALUE IN FOR CLIMBER
+		climberController->Set(operatorThrottle * opReverseThrottleNum);
 
-		climberController->Set(climberSpeed * opReverseThrottleNum2);
+		//SHOOTER
+		//controlled by y axis of operator stick
+		shooter->Set(operatorStick->GetY);
+
+
+
+
 	}
 private:
 	frc::LiveWindow* lw = LiveWindow::GetInstance();
